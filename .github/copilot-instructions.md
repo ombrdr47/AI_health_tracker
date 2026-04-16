@@ -1,0 +1,6 @@
+- Build a production-grade Android-first nutrition tracking app.
+- Do not add mock/seed user data. Use real user-entered data only.
+- Never expose the Groq API key to the mobile client; call Groq only from server-side functions.
+- Prefer Supabase Postgres + Row Level Security for all user data.
+- Validate inputs at API boundaries (Zod in app, schema checks in Edge Functions).
+- Keep changes minimal and security-focused (OWASP Top 10).

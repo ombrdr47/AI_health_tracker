@@ -1,0 +1,28 @@
+{
+  "name": "food-tracker-app",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "mobile:start": "npm -w mobile run start",
+    "mobile:android": "npm -w mobile run android",
+    "mobile:web": "npm -w mobile run web",
+    "typecheck": "npm -w mobile run typecheck",
+    "lint": "npm -w mobile run lint"
+  },
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "^3.0.2",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-native": "0.81.5"
+  },
+  "overrides": {
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-native": "0.81.5"
+  },
+  "devDependencies": {
+    "@types/react": "~19.1.10"
+  }
+}
