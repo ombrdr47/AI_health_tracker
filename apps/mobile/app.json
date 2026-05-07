@@ -29,10 +29,7 @@
     "extra": {
       "supabaseUrl": "https://rdwqtgvczapvljacwvuh.supabase.co",
       "supabaseAnonKey": "sb_publishable_x38U68m9v3twf_CsgWLxIQ_Le7653aA",
-      "router": {},
-      "eas": {
-        "projectId": "8549d23e-f6bf-4f82-af6a-7831a28d6b27"
-      }
+      "router": {}
     }
   }
 }

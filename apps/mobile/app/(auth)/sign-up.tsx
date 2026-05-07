@@ -122,7 +122,9 @@ export default function SignUpScreen() {
            </View>
         </View>
 
-        <PrimaryButton title="Create account" onPress={onSubmit} loading={loading} style={{ marginTop: 8 }} />
+        <View style={{ marginTop: 8 }}>
+          <PrimaryButton title="Create account" onPress={onSubmit} loading={loading} />
+        </View>
 
         <Text style={styles.footer}>
           Already have an account? <Link href="/(auth)/sign-in">Sign in</Link>

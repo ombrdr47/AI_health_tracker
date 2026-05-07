@@ -11,6 +11,13 @@ import { FormTextInput } from "../../src/components/FormTextInput";
 import { PrimaryButton } from "../../src/components/PrimaryButton";
 
 const Schema = z.object({
+  ageYears: z
+    .string()
+    .min(1)
+    .refine((v) => {
+      const n = Number(v);
+      return Number.isFinite(n) && n >= 5 && n <= 120;
+    }, "Enter age (5-120)"),
   heightCm: z
     .string()
     .min(1)
@@ -49,6 +56,13 @@ function bmiFromCmKg(heightCm: number, weightKg: number) {
   return weightKg / (hM * hM);
 }
 
+function getBmiClass(bmi: number) {
+  if (bmi < 18.5) return "Underweight";
+  if (bmi < 25) return "Normal";
+  if (bmi < 30) return "Overweight";
+  return "Obese";
+}
+
 export default function ProfileScreen() {
   const { session } = useSession();
   const [saving, setSaving] = React.useState(false);
@@ -60,7 +74,7 @@ export default function ProfileScreen() {
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(Schema),
-    defaultValues: { heightCm: "", weightKg: "", gender: "Male", dietType: "Vegetarian", cuisinePreferences: "", goal: "General Health" },
+    defaultValues: { ageYears: "", heightCm: "", weightKg: "", gender: "Male", dietType: "Vegetarian", cuisinePreferences: "", goal: "General Health" },
   });
 
   const [loadingProfile, setLoadingProfile] = React.useState(true);
@@ -86,6 +100,9 @@ export default function ProfileScreen() {
 
     const row = (data as ProfileRow | null) ?? null;
     setProfile(row);
+    if (session?.user?.user_metadata?.age) {
+      setValue("ageYears", String(session.user.user_metadata.age), { shouldValidate: true });
+    }
 
     if (row?.height_cm != null) {
       setValue("heightCm", String(row.height_cm), { shouldValidate: true });
@@ -269,7 +286,7 @@ export default function ProfileScreen() {
             </View>
           ) : profile?.bmi != null ? (
             <Text style={styles.muted}>
-              Saved BMI: {Number(profile.bmi).toFixed(1)}
+              Saved BMI: {Number(profile.bmi).toFixed(1)} ({getBmiClass(Number(profile.bmi))})
             </Text>
           ) : (
             <Text style={styles.muted}>No saved profile yet.</Text>
@@ -277,7 +294,7 @@ export default function ProfileScreen() {
 
           {liveBmi != null ? (
             <Text style={styles.muted}>
-              Current BMI (from inputs): {liveBmi.toFixed(1)}
+              Current BMI (from inputs): {liveBmi.toFixed(1)} ({getBmiClass(liveBmi)})
             </Text>
           ) : null}
         </View>

@@ -9,7 +9,7 @@ import {
   ImageBackground
 } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
-import { ProgressChart } from "react-native-chart-kit";
+import { ProgressChart, LineChart } from "react-native-chart-kit";
 import * as SecureStore from "expo-secure-store";
 
 import { supabase } from "../../src/lib/supabase";
@@ -92,6 +92,7 @@ export default function DashboardScreen() {
   const [mood, setMood] = React.useState<MoodRow | null>(null);
   const [sleep, setSleep] = React.useState<SleepRow | null>(null);
   const [weight, setWeight] = React.useState<WeightRow | null>(null);
+  const [weightHistory, setWeightHistory] = React.useState<[string, number][]>([]);
   const [menstrualLogs, setMenstrualLogs] = React.useState<MenstrualRow[]>([]);
 
   const [nextPlan, setNextPlan] = React.useState<DailyPlan | null>(null);
@@ -110,7 +111,13 @@ export default function DashboardScreen() {
     const start = startOfLocalDay(now).toISOString();
     const end = addDays(startOfLocalDay(now), 1).toISOString();
 
-    const [profileRes, mealsRes, waterRes, moodRes, sleepRes, weightRes, menstrualRes] =
+    const weightHistoryRes = supabase
+      .from("weight_logs")
+      .select("weight_kg, logged_at")
+      .order("logged_at", { ascending: true })
+      .limit(30);
+
+    const [profileRes, mealsRes, waterRes, moodRes, sleepRes, weightRes, menstrualRes, whRes] =
       await Promise.all([
         supabase
           .from("profiles")
@@ -153,7 +160,8 @@ export default function DashboardScreen() {
           .from("menstrual_logs")
           .select("id,start_date,end_date,notes")
           .order("start_date", { ascending: false })
-          .limit(5)
+          .limit(5),
+        weightHistoryRes
       ]);
 
     if (
@@ -163,7 +171,7 @@ export default function DashboardScreen() {
       moodRes.error ||
       sleepRes.error ||
       weightRes.error ||
-      menstrualRes.error
+      menstrualRes.error || whRes.error
     ) {
       const first =
         profileRes.error ||
@@ -191,6 +199,11 @@ export default function DashboardScreen() {
 
     const weightRow = (weightRes.data as WeightRow[] | null)?.[0] ?? null;
     setWeight(weightRow);
+
+    if (whRes.data) {
+      const trend = (whRes.data as {weight_kg: number, logged_at: string}[]).map(w => [new Date(w.logged_at).toLocaleDateString([], { month: "short", day: "numeric" }), w.weight_kg] as [string, number]);
+      setWeightHistory(trend);
+    }
 
     // Load AI plan
     try {
@@ -378,7 +391,11 @@ export default function DashboardScreen() {
 
         <View style={styles.profileRow}>
           <Text style={styles.muted}>
-            BMI: {profile?.bmi != null ? Number(profile.bmi).toFixed(1) : "—"}
+            BMI: {profile?.bmi != null ? `${Number(profile.bmi).toFixed(1)} (${
+              profile.bmi < 18.5 ? "Underweight" :
+              profile.bmi < 25 ? "Normal" :
+              profile.bmi < 30 ? "Overweight" : "Obese"
+            })` : "—"}
             {weight ? ` • last weight ${Number(weight.weight_kg).toFixed(1)}kg` : ""}
           </Text>
         </View>
