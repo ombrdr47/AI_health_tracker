@@ -29,7 +29,11 @@
     "extra": {
       "supabaseUrl": "https://rdwqtgvczapvljacwvuh.supabase.co",
       "supabaseAnonKey": "sb_publishable_x38U68m9v3twf_CsgWLxIQ_Le7653aA",
-      "router": {}
-    }
+      "router": {},
+      "eas": {
+        "projectId": "4877159f-fdc3-4b10-91fd-17af0ddc09d0"
+      }
+    },
+    "owner": "ombrdr"
   }
 }
