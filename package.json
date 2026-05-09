@@ -11,9 +11,6 @@
     "typecheck": "npm -w mobile run typecheck",
     "lint": "npm -w mobile run lint"
   },
-  "devDependencies": {
-    "expo": "54.0.34"
-  },
   "overrides": {
     "expo": "54.0.34",
     "expo-linking": "8.0.12",
