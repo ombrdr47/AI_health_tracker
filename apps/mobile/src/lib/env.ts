@@ -7,8 +7,21 @@ const ExtraSchema = z.object({
 });
 
 export function getPublicEnv() {
-  const extra = (Constants.expoConfig?.extra ?? {}) as unknown;
-  const parsed = ExtraSchema.safeParse(extra);
+  // Primary source: extra config embedded by app.config.ts / app.json
+  const extra = (Constants.expoConfig?.extra ?? {}) as Record<string, unknown>;
+
+  // Fallback: EXPO_PUBLIC_* vars are inlined at bundle time by Metro,
+  // so they're always available even if extra config is missing.
+  const merged = {
+    supabaseUrl:
+      (extra.supabaseUrl as string | undefined) ||
+      process.env.EXPO_PUBLIC_SUPABASE_URL,
+    supabaseAnonKey:
+      (extra.supabaseAnonKey as string | undefined) ||
+      process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+  };
+
+  const parsed = ExtraSchema.safeParse(merged);
 
   if (!parsed.success) {
     const issues = parsed.error.issues
