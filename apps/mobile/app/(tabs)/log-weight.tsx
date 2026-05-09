@@ -55,12 +55,42 @@ export default function LogWeightScreen() {
         return;
       }
 
-      Alert.alert("Saved", "Weight logged.");
+      // Auto-update BMI in profiles whenever weight is logged
+      let bmiMessage = "";
+      try {
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("height_cm")
+          .maybeSingle();
+
+        if (profileData?.height_cm) {
+          const hM = profileData.height_cm / 100;
+          const newBmi = weight_kg / (hM * hM);
+          const bmiClass =
+            newBmi < 18.5 ? "Underweight" :
+            newBmi < 25 ? "Normal" :
+            newBmi < 30 ? "Overweight" : "Obese";
+
+          await supabase.from("profiles").upsert({
+            user_id: session.user.id,
+            weight_kg,
+            bmi: newBmi,
+            updated_at: new Date().toISOString(),
+          });
+
+          bmiMessage = `\nBMI updated: ${newBmi.toFixed(1)} (${bmiClass})`;
+        }
+      } catch {
+        // BMI update is best-effort — don't fail the weight log
+      }
+
+      Alert.alert("Saved", `Weight logged: ${weight_kg} kg${bmiMessage}`);
       router.back();
     } finally {
       setSaving(false);
     }
   });
+
 
   return (
     <View style={styles.container}>

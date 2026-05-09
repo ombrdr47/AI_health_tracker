@@ -44,6 +44,7 @@ type ProfileRow = {
   height_cm: number | null;
   weight_kg: number | null;
   bmi: number | null;
+  age_years: number | null;  // Fix #3: was missing from type
   gender: string | null;
   diet_type: string | null;
   cuisine_preferences: string | null;
@@ -89,7 +90,8 @@ export default function ProfileScreen() {
     setLoadingProfile(true);
     const { data, error } = await supabase
       .from("profiles")
-      .select("height_cm,weight_kg,bmi,gender,diet_type,cuisine_preferences,goal,updated_at")
+      // Fix #3: include age_years in select so it loads from DB on every mount
+      .select("height_cm,weight_kg,bmi,age_years,gender,diet_type,cuisine_preferences,goal,updated_at")
       .maybeSingle();
 
     if (error) {
@@ -100,8 +102,11 @@ export default function ProfileScreen() {
 
     const row = (data as ProfileRow | null) ?? null;
     setProfile(row);
-    if (session?.user?.user_metadata?.age) {
-      setValue("ageYears", String(session.user.user_metadata.age), { shouldValidate: true });
+
+    // Fix #3: prefer DB value for age, fall back to auth user_metadata
+    const resolvedAge = row?.age_years ?? session?.user?.user_metadata?.age;
+    if (resolvedAge != null) {
+      setValue("ageYears", String(resolvedAge), { shouldValidate: true });
     }
 
     if (row?.height_cm != null) {
@@ -124,7 +129,7 @@ export default function ProfileScreen() {
     }
 
     setLoadingProfile(false);
-  }, [session?.user?.id, setValue]);
+  }, [session?.user?.id, session?.user?.user_metadata?.age, setValue]);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -137,17 +142,20 @@ export default function ProfileScreen() {
 
     const heightCm = Number(values.heightCm);
     const weightKg = Number(values.weightKg);
+    const ageYears = Number(values.ageYears);
     const bmi = bmiFromCmKg(heightCm, weightKg);
 
     setSaving(true);
     try {
       const updatedAt = new Date().toISOString();
 
+      // Fix #1: age_years now included in upsert
       const { error } = await supabase.from("profiles").upsert({
         user_id: session.user.id,
         height_cm: heightCm,
         weight_kg: weightKg,
         bmi,
+        age_years: ageYears,
         gender: values.gender,
         diet_type: values.dietType,
         cuisine_preferences: values.cuisinePreferences,
@@ -160,18 +168,29 @@ export default function ProfileScreen() {
         return;
       }
 
-      setProfile({
-        height_cm: heightCm,
-        weight_kg: weightKg,
-        bmi,
-        gender: values.gender || null,
-        diet_type: values.dietType || null,
-        cuisine_preferences: values.cuisinePreferences || null,
-        goal: values.goal || null,
-        updated_at: updatedAt,
-      });
+      // Fix #2: re-fetch from DB to confirm actual persistence
+      const { data: savedRow, error: fetchError } = await supabase
+        .from("profiles")
+        .select("height_cm,weight_kg,bmi,age_years,gender,diet_type,cuisine_preferences,goal,updated_at")
+        .maybeSingle();
 
-      Alert.alert("Saved", `Profile updated.`);
+      if (fetchError || !savedRow) {
+        Alert.alert("Verification failed", "Profile may have saved but could not confirm. Please reload the screen.");
+        return;
+      }
+
+      setProfile(savedRow as ProfileRow);
+      const confirmed = savedRow as ProfileRow;
+      const confirmedBmi = Number(confirmed.bmi ?? bmi);
+
+      // Fix #4: detailed confirmation with actual saved values from DB
+      Alert.alert(
+        "✅ Profile Saved",
+        `Weight: ${Number(confirmed.weight_kg).toFixed(1)} kg\n` +
+        `BMI: ${confirmedBmi.toFixed(1)} — ${getBmiClass(confirmedBmi)}\n` +
+        `Age: ${confirmed.age_years ?? ageYears} yrs  •  ${confirmed.gender ?? values.gender}\n` +
+        `Diet: ${confirmed.diet_type ?? values.dietType}`
+      );
     } finally {
       setSaving(false);
     }
@@ -204,19 +223,26 @@ export default function ProfileScreen() {
 
         <View style={styles.formCard}>
           <FormTextInput
+            label="Age (years)"
+            value={watch("ageYears")}
+            onChangeText={(t) => setValue("ageYears", t, { shouldValidate: true })}
+            keyboardType="number-pad"
+            error={errors.ageYears?.message}
+          />
+          <FormTextInput
             label="Height (cm)"
-          value={heightCmInput}
-          onChangeText={(t) => setValue("heightCm", t, { shouldValidate: true })}
-          keyboardType="number-pad"
-          error={errors.heightCm?.message}
-        />
-        <FormTextInput
-          label="Weight (kg)"
-          value={weightKgInput}
-          onChangeText={(t) => setValue("weightKg", t, { shouldValidate: true })}
-          keyboardType="decimal-pad"
-          error={errors.weightKg?.message}
-        />
+            value={heightCmInput}
+            onChangeText={(t) => setValue("heightCm", t, { shouldValidate: true })}
+            keyboardType="number-pad"
+            error={errors.heightCm?.message}
+          />
+          <FormTextInput
+            label="Weight (kg)"
+            value={weightKgInput}
+            onChangeText={(t) => setValue("weightKg", t, { shouldValidate: true })}
+            keyboardType="decimal-pad"
+            error={errors.weightKg?.message}
+          />
 
         <View style={{ marginTop: 4 }}>
            <Text style={{ fontSize: 12, fontWeight: "600", color: "#6B7280", marginBottom: 6 }}>Gender</Text>
@@ -285,16 +311,21 @@ export default function ProfileScreen() {
               <Text style={styles.muted}>Loading saved profile…</Text>
             </View>
           ) : profile?.bmi != null ? (
-            <Text style={styles.muted}>
-              Saved BMI: {Number(profile.bmi).toFixed(1)} ({getBmiClass(Number(profile.bmi))})
-            </Text>
+            <>
+              <Text style={styles.muted}>
+                Saved BMI: {Number(profile.bmi).toFixed(1)} ({getBmiClass(Number(profile.bmi))})
+              </Text>
+              {profile.age_years != null && (
+                <Text style={styles.muted}>Age: {profile.age_years} yrs  •  {profile.gender}</Text>
+              )}
+            </>
           ) : (
-            <Text style={styles.muted}>No saved profile yet.</Text>
+            <Text style={styles.muted}>No saved profile yet. Fill in your details and tap Save.</Text>
           )}
 
           {liveBmi != null ? (
-            <Text style={styles.muted}>
-              Current BMI (from inputs): {liveBmi.toFixed(1)} ({getBmiClass(liveBmi)})
+            <Text style={[styles.muted, { color: "#4F46E5", fontWeight: "700" }]}>
+              Live BMI: {liveBmi.toFixed(1)} — {getBmiClass(liveBmi)}
             </Text>
           ) : null}
         </View>
