@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   Dimensions,
+  ImageBackground,
 } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import { ProgressChart, LineChart } from "react-native-chart-kit";
@@ -308,6 +309,12 @@ export default function DashboardScreen() {
   const userName = session?.user?.user_metadata?.full_name || "there";
 
   return (
+    <ImageBackground 
+      source={{ uri: "https://images.unsplash.com/photo-1540420773420-3366772f4999?q=80&w=600&auto=format&fit=crop" }} 
+      style={{ flex: 1 }}
+      imageStyle={{ opacity: 0.15 }} // Keeping it faint to not clobber text
+      resizeMode="cover"
+    >
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
@@ -354,29 +361,101 @@ export default function DashboardScreen() {
       {/* Menstrual Cycle */}
       {profile?.gender === "Female" && (
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Menstrual Cycle</Text>
-          {menstrualLogs.length > 0 && menstrualLogs[0].start_date ? (
-            <View style={{ marginVertical: 6 }}>
-              <Text style={{ fontSize: 13, color: "#374151" }}>
-                Active Cycle Start: <Text style={{ fontWeight: "700" }}>{menstrualLogs[0].start_date}</Text>
-              </Text>
-              {!menstrualLogs[0].end_date ? (
-                <View style={{ marginTop: 8 }}>
-                  <PrimaryButton title="Log Period End" onPress={() => logPeriodEnd(menstrualLogs[0].id)} />
-                </View>
-              ) : (
-                <View style={{ marginTop: 8 }}>
-                  <Text style={{ fontSize: 12, color: "#6B7280", marginBottom: 8 }}>Last period ended on {menstrualLogs[0].end_date}</Text>
+          <Text style={styles.cardTitle}>🌸 Menstrual Cycle</Text>
+
+          {(() => {
+            // No logs at all
+            if (menstrualLogs.length === 0) {
+              return (
+                <View style={{ gap: 8 }}>
+                  <Text style={styles.muted}>No cycle logged yet. Tap below to start tracking.</Text>
                   <PrimaryButton title="Log Period Start" onPress={logPeriodStart} />
                 </View>
-              )}
-            </View>
-          ) : (
-            <View style={{ marginVertical: 6 }}>
-              <Text style={{ fontSize: 13, color: "#6B7280", marginBottom: 8 }}>No cycle logged yet.</Text>
-              <PrimaryButton title="Log Period Start" onPress={logPeriodStart} />
-            </View>
-          )}
+              );
+            }
+
+            const latest = menstrualLogs[0];
+            const isActive = !latest.end_date;
+
+            // Calculate days elapsed for active cycle
+            const today = new Date();
+            const startDate = new Date(latest.start_date);
+            const daysElapsed = Math.floor((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+
+            // Calculate average cycle length from history (for next cycle estimate)
+            const completedCycles = menstrualLogs.filter(l => l.start_date && l.end_date);
+            let avgCycleDays: number | null = null;
+            if (completedCycles.length >= 2) {
+              const starts = completedCycles.map(l => new Date(l.start_date).getTime()).sort((a, b) => a - b);
+              const gaps: number[] = [];
+              for (let i = 1; i < starts.length; i++) {
+                gaps.push(Math.round((starts[i] - starts[i - 1]) / (1000 * 60 * 60 * 24)));
+              }
+              avgCycleDays = Math.round(gaps.reduce((a, b) => a + b, 0) / gaps.length);
+            }
+
+            return (
+              <View style={{ gap: 12 }}>
+                {/* Active cycle status */}
+                {isActive ? (
+                  <View style={{ backgroundColor: "#FFF1F2", borderRadius: 12, padding: 12, gap: 6 }}>
+                    <Text style={{ fontSize: 13, fontWeight: "700", color: "#BE123C" }}>🔴 Active Period</Text>
+                    <Text style={{ fontSize: 13, color: "#374151" }}>
+                      Started: <Text style={{ fontWeight: "700" }}>{latest.start_date}</Text>
+                    </Text>
+                    <Text style={{ fontSize: 13, color: "#374151" }}>
+                      Day <Text style={{ fontWeight: "700", color: "#BE123C" }}>{daysElapsed + 1}</Text> of period
+                    </Text>
+                    <View style={{ marginTop: 4 }}>
+                      <PrimaryButton title="Log Period End" onPress={() => logPeriodEnd(latest.id)} />
+                    </View>
+                  </View>
+                ) : (
+                  <View style={{ backgroundColor: "#F0FDF4", borderRadius: 12, padding: 12, gap: 6 }}>
+                    <Text style={{ fontSize: 13, fontWeight: "700", color: "#15803D" }}>✅ Last Period Ended</Text>
+                    <Text style={{ fontSize: 13, color: "#374151" }}>
+                      {latest.start_date} → {latest.end_date}
+                      {"  "}
+                      <Text style={{ color: "#6B7280" }}>
+                        ({Math.round((new Date(latest.end_date!).getTime() - new Date(latest.start_date).getTime()) / (1000 * 60 * 60 * 24))} days)
+                      </Text>
+                    </Text>
+                    {avgCycleDays && (
+                      <Text style={{ fontSize: 12, color: "#6B7280" }}>
+                        Next expected in ~{avgCycleDays} days from last start
+                        {" "}({new Date(new Date(latest.start_date).getTime() + avgCycleDays * 86400000).toDateString()})
+                      </Text>
+                    )}
+                    <View style={{ marginTop: 4 }}>
+                      <PrimaryButton title="Log New Period Start" onPress={logPeriodStart} />
+                    </View>
+                  </View>
+                )}
+
+                {/* Cycle history (past cycles) */}
+                {menstrualLogs.length > 1 && (
+                  <View style={{ gap: 4 }}>
+                    <Text style={[styles.muted, { fontWeight: "700", color: "#374151" }]}>Past Cycles</Text>
+                    {menstrualLogs.slice(1).map((log) => {
+                      const duration = log.end_date
+                        ? Math.round((new Date(log.end_date).getTime() - new Date(log.start_date).getTime()) / (1000 * 60 * 60 * 24))
+                        : null;
+                      return (
+                        <View key={log.id} style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: 5, borderTopWidth: 1, borderTopColor: "#F3F4F6" }}>
+                          <Text style={{ fontSize: 12, color: "#374151" }}>
+                            {log.start_date}{log.end_date ? ` → ${log.end_date}` : " (no end logged)"}
+                          </Text>
+                          {duration != null && (
+                            <Text style={{ fontSize: 12, color: "#6B7280", fontWeight: "600" }}>{duration}d</Text>
+                          )}
+                        </View>
+                      );
+                    })}
+                  </View>
+                )}
+              </View>
+            );
+          })()}
         </View>
       )}
 
@@ -452,11 +531,12 @@ export default function DashboardScreen() {
 
       <Text style={styles.footerHint}>Pull down to refresh • Your data, no mock data.</Text>
     </ScrollView>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F9FAFB" },
+  container: { flex: 1, backgroundColor: "transparent" },
   content: { padding: 16, gap: 12, paddingBottom: 40 },
   center: { alignItems: "center", justifyContent: "center", gap: 10, padding: 16 },
 
