@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  Animated,
 } from "react-native";
 
 import { supabase } from "../../src/lib/supabase";
@@ -23,6 +24,37 @@ type CoachMessage = {
   content: string;
   created_at: string;
 };
+
+function TypingIndicator() {
+  const dot1 = React.useRef(new Animated.Value(0)).current;
+  const dot2 = React.useRef(new Animated.Value(0)).current;
+  const dot3 = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    const anim = (dot: Animated.Value, delay: number) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(delay),
+          Animated.timing(dot, { toValue: -6, duration: 300, useNativeDriver: true }),
+          Animated.timing(dot, { toValue: 0, duration: 300, useNativeDriver: true }),
+          Animated.delay(600),
+        ])
+      );
+    const a1 = anim(dot1, 0); const a2 = anim(dot2, 150); const a3 = anim(dot3, 300);
+    a1.start(); a2.start(); a3.start();
+    return () => { a1.stop(); a2.stop(); a3.stop(); };
+  }, [dot1, dot2, dot3]);
+
+  return (
+    <View style={styles.bubbleAssistant}>
+      <View style={{ flexDirection: "row", gap: 4, paddingHorizontal: 4 }}>
+        {[dot1, dot2, dot3].map((d, i) => (
+          <Animated.View key={i} style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: "#9CA3AF", transform: [{ translateY: d }] }} />
+        ))}
+      </View>
+    </View>
+  );
+}
 
 const MessageItem = React.memo(({ item }: { item: CoachMessage }) => {
   const isUser = item.role === "user";
@@ -214,23 +246,26 @@ export default function CoachScreen() {
         windowSize={5}
         onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
         renderItem={({ item }) => <MessageItem item={item} />}
+        ListFooterComponent={sending ? <TypingIndicator /> : null}
       />
 
       <View style={styles.composer}>
         <TextInput
           value={draft}
           onChangeText={setDraft}
-          placeholder="Type a message"
+          placeholder="Ask your coach..."
           placeholderTextColor="#9CA3AF"
           style={styles.input}
           multiline
+          onSubmitEditing={onSend}
         />
-        <PrimaryButton
-          title={sending ? "Sending..." : "Send"}
+        <Pressable
           onPress={onSend}
-          loading={sending}
-          disabled={!draft.trim()}
-        />
+          disabled={!draft.trim() || sending}
+          style={[styles.sendButton, (!draft.trim() || sending) && styles.sendButtonDisabled]}
+        >
+          <Text style={styles.sendIcon}>↑</Text>
+        </Pressable>
       </View>
     </KeyboardAvoidingView>
   );
@@ -240,49 +275,90 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: "#F9FAFB",
+    backgroundColor: "#F3F4FF",  // soft indigo tint
     gap: 10,
   },
   title: { fontSize: 22, fontWeight: "800", color: "#111827" },
   subtitle: { fontSize: 14, color: "#374151", lineHeight: 20 },
   listContent: {
     paddingVertical: 8,
-    gap: 10,
+    gap: 8,
   },
   bubble: {
     maxWidth: "88%",
     paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 14,
+    paddingHorizontal: 14,
+    borderRadius: 18,
   },
   bubbleUser: {
     alignSelf: "flex-end",
-    backgroundColor: "#111827",
+    backgroundColor: "#4F46E5",   // indigo
+    borderBottomRightRadius: 4,
+    shadowColor: "#4F46E5",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
   },
   bubbleAssistant: {
     alignSelf: "flex-start",
-    backgroundColor: "#ffffff",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
+    backgroundColor: "#FEFEFE",
+    borderBottomLeftRadius: 4,
+    borderLeftWidth: 3,
+    borderLeftColor: "#4F46E5",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
   bubbleText: { fontSize: 14, lineHeight: 20 },
-  bubbleTextUser: { color: "#ffffff" },
+  bubbleTextUser: { color: "#ffffff", fontWeight: "500" },
   bubbleTextAssistant: { color: "#111827" },
   composer: {
+    flexDirection: "row",
+    alignItems: "flex-end",
     gap: 10,
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 4,
   },
   input: {
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingTop: 12,
-    paddingBottom: 12,
-    fontSize: 16,
+    flex: 1,
+    fontSize: 15,
     color: "#111827",
-    backgroundColor: "#fff",
-    minHeight: 44,
+    minHeight: 36,
     maxHeight: 120,
     textAlignVertical: "top",
+    paddingTop: 6,
+  },
+  sendButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "#4F46E5",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#4F46E5",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  sendButtonDisabled: {
+    backgroundColor: "#C7D2FE",
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  sendIcon: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "800",
   },
 });

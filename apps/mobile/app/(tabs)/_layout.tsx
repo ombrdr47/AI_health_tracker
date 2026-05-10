@@ -14,8 +14,24 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: true,
-        tabBarActiveTintColor: "#111827",
-        tabBarInactiveTintColor: "#6B7280",
+        tabBarActiveTintColor: "#4F46E5",
+        tabBarInactiveTintColor: "#9CA3AF",
+        tabBarStyle: {
+          backgroundColor: "#fff",
+          borderTopWidth: 0,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 0.06,
+          shadowRadius: 12,
+          elevation: 12,
+          height: 60,
+          paddingBottom: 8,
+        },
+        headerStyle: {
+          shadowColor: "transparent",
+          elevation: 0,
+          borderBottomWidth: 0,
+        },
       }}
     >
       {/* Hide the index route from the tab bar (it just redirects to Dashboard). */}

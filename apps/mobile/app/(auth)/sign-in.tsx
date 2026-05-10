@@ -1,5 +1,5 @@
 import * as React from "react";
-import { View, Text, StyleSheet, Alert } from "react-native";
+import { View, Text, StyleSheet, Alert, ImageBackground } from "react-native";
 import { Link, Redirect } from "expo-router";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -105,75 +105,124 @@ export default function SignInScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Sign in</Text>
-      <Text style={styles.subtitle}>Continue to your nutrition dashboard.</Text>
+    <ImageBackground
+      source={{ uri: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?q=80&w=800&auto=format&fit=crop" }}
+      style={{ flex: 1 }}
+      resizeMode="cover"
+    >
+      {/* Dark overlay */}
+      <View style={styles.overlay} />
 
-      <View style={styles.form}>
-        <FormTextInput
-          label="Email"
-          value={watch("email")}
-          onChangeText={(t) => setValue("email", t, { shouldValidate: true })}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          textContentType="emailAddress"
-          error={errors.email?.message}
-        />
-        <FormTextInput
-          label="Password"
-          value={watch("password")}
-          onChangeText={(t) => setValue("password", t, { shouldValidate: true })}
-          secureTextEntry
-          textContentType="password"
-          error={errors.password?.message}
-        />
+      <View style={styles.container}>
+        {/* App branding */}
+        <View style={styles.brandingBlock}>
+          <Text style={styles.appName}>🥗 NutriTrack</Text>
+          <Text style={styles.appTagline}>Your AI-powered health companion</Text>
+        </View>
 
-        <PrimaryButton title="Sign in" onPress={onSubmit} loading={loading} />
-        <PrimaryButton
-          title="Continue with Google"
-          onPress={onGoogle}
-          loading={oauthLoading}
-        />
+        {/* Form card */}
+        <View style={styles.card}>
+          <Text style={styles.title}>Welcome back</Text>
+          <Text style={styles.subtitle}>Sign in to continue to your dashboard.</Text>
 
-        <Text style={styles.linkRow}>
-          <Link href="/(auth)/reset-password">Forgot password?</Link>
-        </Text>
+          <View style={styles.form}>
+            <FormTextInput
+              label="Email"
+              value={watch("email")}
+              onChangeText={(t) => setValue("email", t, { shouldValidate: true })}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              textContentType="emailAddress"
+              error={errors.email?.message}
+            />
+            <FormTextInput
+              label="Password"
+              value={watch("password")}
+              onChangeText={(t) => setValue("password", t, { shouldValidate: true })}
+              secureTextEntry
+              textContentType="password"
+              error={errors.password?.message}
+            />
 
-        <Text style={styles.footer}>
-          No account? <Link href="/(auth)/sign-up">Create one</Link>
-        </Text>
+            <PrimaryButton title="Sign in" onPress={onSubmit} loading={loading} />
+            <PrimaryButton
+              title="Continue with Google"
+              onPress={onGoogle}
+              loading={oauthLoading}
+            />
+
+            <Text style={styles.linkRow}>
+              <Link href="/(auth)/reset-password">Forgot password?</Link>
+            </Text>
+
+            <Text style={styles.footer}>
+              No account? <Link href="/(auth)/sign-up">Create one</Link>
+            </Text>
+          </View>
+        </View>
       </View>
-    </View>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(10, 10, 30, 0.62)",
+  },
   container: {
     flex: 1,
-    padding: 20,
+    paddingHorizontal: 24,
     justifyContent: "center",
-    backgroundColor: "#F9FAFB",
-    gap: 10,
+    gap: 20,
+  },
+  brandingBlock: {
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 8,
+  },
+  appName: {
+    fontSize: 32,
+    fontWeight: "800",
+    color: "#fff",
+    letterSpacing: 0.5,
+  },
+  appTagline: {
+    fontSize: 14,
+    color: "rgba(255,255,255,0.7)",
+    fontWeight: "500",
+  },
+  card: {
+    backgroundColor: "rgba(255,255,255,0.96)",
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 12,
+    gap: 6,
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: "800",
     color: "#111827",
   },
   subtitle: {
     fontSize: 14,
     color: "#6B7280",
+    marginBottom: 4,
   },
   form: {
-    marginTop: 16,
+    marginTop: 8,
     gap: 14,
   },
   linkRow: {
     textAlign: "center",
-    color: "#374151",
+    color: "#4F46E5",
+    fontWeight: "600",
   },
   footer: {
-    marginTop: 10,
     textAlign: "center",
     color: "#374151",
   },
