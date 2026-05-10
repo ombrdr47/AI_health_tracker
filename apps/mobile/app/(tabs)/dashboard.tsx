@@ -503,17 +503,19 @@ export default function DashboardScreen() {
         </View>
       ) : !nextPlan ? (
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Daily AI Plan</Text>
-          <Text style={styles.muted}>Generate a personalised meal plan for tomorrow based on your BMI and goals.</Text>
-          <PrimaryButton title="Generate Plan" loading={generatingPlan} onPress={generatePlan} />
+          <Text style={styles.cardTitle}>🤖 Tomorrow's AI Meal Plan</Text>
+          <Text style={styles.muted}>
+            Get a personalised meal plan for <Text style={{ fontWeight: "700", color: "#4F46E5" }}>tomorrow</Text>, tailored to your BMI, diet type, and goals.{"\n"}Make sure your profile is up to date for the best results.
+          </Text>
+          <PrimaryButton title="Generate Tomorrow's Plan" loading={generatingPlan} onPress={generatePlan} />
         </View>
       ) : (
         <View style={[styles.card, { backgroundColor: "#EEF2FF", borderColor: "#818CF8" }]}>
-          <Text style={styles.cardTitle}>Tomorrow's AI Plan</Text>
+          <Text style={styles.cardTitle}>🤖 Tomorrow's Plan is Ready</Text>
           <View style={styles.planSection}>
-            <Text style={styles.chartTitle}>Target Requirements</Text>
-            <Text style={styles.statLabel}>Water Goal: {nextPlan.water_ml}ml</Text>
-            <Text style={styles.statLabel}>Sleep Target: {nextPlan.sleep_hours} hours</Text>
+            <Text style={styles.chartTitle}>Daily Targets</Text>
+            <Text style={styles.statLabel}>💧 Water: {nextPlan.water_ml}ml</Text>
+            <Text style={styles.statLabel}>😴 Sleep: {nextPlan.sleep_hours} hours</Text>
           </View>
           <Text style={[styles.chartTitle, { marginTop: 10 }]}>Recommended Meals</Text>
           {(nextPlan.meals || []).map((m, idx) => (
