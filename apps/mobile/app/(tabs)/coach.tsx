@@ -215,8 +215,8 @@ export default function CoachScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior="padding"
-      keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 60}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 116 : 0}
     >
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingBottom: 6 }}>
         <View style={{ flex: 1, paddingRight: 8 }}>
@@ -244,6 +244,8 @@ export default function CoachScreen() {
         initialNumToRender={10}
         maxToRenderPerBatch={5}
         windowSize={5}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
         onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
         renderItem={({ item }) => <MessageItem item={item} />}
         ListFooterComponent={sending ? <TypingIndicator /> : null}
@@ -257,6 +259,8 @@ export default function CoachScreen() {
           placeholderTextColor="#9CA3AF"
           style={styles.input}
           multiline
+          blurOnSubmit={false}
+          returnKeyType="send"
           onSubmitEditing={onSend}
         />
         <Pressable
